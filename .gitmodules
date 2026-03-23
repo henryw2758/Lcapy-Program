@@ -1,0 +1,3 @@
+[submodule "lcapy"]
+	path = lcapy
+	url = https://github.com/mph-/lcapy.git
