@@ -97,7 +97,8 @@ def spell_out_multiplier(value: str) -> str:
         base_value = base_num * target_factor
         
         # Find first unit where the value is ≥ 1
-        for unit, factor in unit_scale:
+        # Only search from the target unit and upwards (for suffix notation, we already know the target unit)
+        for unit, factor in unit_scale[target_index:]:
             scaled_value = base_value / factor
             if scaled_value >= 1:
                 # Format the number nicely
