@@ -1,0 +1,120 @@
+================================================================================
+                    BUILD kicad2lcapy.exe - QUICK START
+================================================================================
+
+PROBLEM SOLVED:
+  ✓ No file paths exposed (safe for public repos)
+  ✓ Standalone executable (.exe file)
+  ✓ No Python needed for end users
+  ✓ Professional appearance
+
+================================================================================
+                            BUILD IN 3 STEPS
+================================================================================
+
+STEP 1: Install PyInstaller
+----------------------------
+Open Command Prompt and type:
+
+    pip install pyinstaller
+
+
+STEP 2: Build the Executable
+-----------------------------
+Navigate to project directory:
+
+    cd C:\VT\GitHub\Lcapy-Program
+
+Then build:
+
+    python build_exe.py
+
+This creates: dist\kicad2lcapy.exe
+
+
+STEP 3: Test It
+---------------
+Test the built executable:
+
+    cd dist
+    kicad2lcapy.exe --help
+
+DONE! You now have kicad2lcapy.exe
+
+================================================================================
+                            WHAT YOU GET
+================================================================================
+
+FILE: kicad2lcapy.exe (50-100 MB)
+
+LOCATION: C:\VT\GitHub\Lcapy-Program\dist\kicad2lcapy.exe
+
+USAGE:
+    kicad2lcapy.exe circuit.kicad_sch
+    kicad2lcapy.exe circuit.kicad_sch --show-netlist
+    kicad2lcapy.exe circuit.kicad_sch --format svg png pdf
+
+OUTPUT (NO FILE PATHS SHOWN):
+    [OK] Netlist saved: circuit_netlist.txt
+    [OK] Diagram saved: circuit_diagram.svg
+
+================================================================================
+                          DISTRIBUTION
+================================================================================
+
+Just copy the .exe file:
+
+    C:\VT\GitHub\Lcapy-Program\dist\kicad2lcapy.exe
+
+Users can:
+  • Run it directly (no installation)
+  • Place on USB drive (portable)
+  • Share via email/cloud
+  • Add to their PATH (global access)
+
+NO PYTHON REQUIRED FOR END USERS!
+
+================================================================================
+                        PRIVACY BENEFITS
+================================================================================
+
+The executable:
+  ✓ Does NOT show your system file paths
+  ✓ Does NOT reveal Python installation location
+  ✓ Does NOT expose directory structure
+  ✓ Safe to commit to public repositories
+  ✓ No sensitive system information in output
+
+Output is clean:
+  [OK] Netlist saved: circuit_netlist.txt
+  [OK] Diagram saved: circuit_diagram.svg
+
+NOT revealing:
+  C:\Users\henry\AppData\Local\Microsoft\WindowsApps\...
+  C:\VT\GitHub\Lcapy-Program\...
+  etc.
+
+================================================================================
+                        ADVANCED OPTIONS
+================================================================================
+
+For more control, see: BUILD_EXE_GUIDE.md
+
+Topics covered:
+  • Custom build options
+  • Code signing
+  • Creating installers (NSIS)
+  • Portable versions
+  • Troubleshooting
+
+================================================================================
+                              SUMMARY
+================================================================================
+
+1. Run:  pip install pyinstaller
+2. Run:  python build_exe.py
+3. Use:  dist\kicad2lcapy.exe
+
+That's it!
+
+================================================================================

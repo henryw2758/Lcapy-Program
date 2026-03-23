@@ -1,0 +1,159 @@
+================================================================================
+          KiCAD-to-Lcapy CLI TEST - SIMPLE STEP-BY-STEP GUIDE
+================================================================================
+
+STEP 1: Open Command Prompt (CMD)
+================================
+Click: Start Menu → Search "cmd" → Open Command Prompt
+
+
+STEP 2: Navigate to the lcapy directory
+=======================================
+Type this command and press ENTER:
+
+    cd C:\VT\GitHub\Lcapy-Program\lcapy
+
+Your prompt should now show:
+    C:\VT\GitHub\Lcapy-Program\lcapy>
+
+
+STEP 3: Run the converter CLI
+=============================
+Copy and paste this command, then press ENTER:
+
+    python -m lcapy.scripts.kicad_converter lcapy/tests/test_kicad.sch --show-netlist
+
+WHAT YOU SHOULD SEE:
+-------------------
+Netlist saved to: test_kicad_netlist.txt
+Generated Lcapy Netlist:
+==================================================
+V1 1 0 dc 1
+R1 1 0 R_US
+==================================================
+
+Conversion completed successfully!
+
+
+STEP 4: Check the generated files
+==================================
+Type this command to see what was created:
+
+    dir test_kicad*.*
+
+You should see these files:
+    - test_kicad_netlist.txt
+    - test_kicad_diagram.svg
+
+
+STEP 5: View the netlist content
+=================================
+Type this to see what's in the netlist file:
+
+    type test_kicad_netlist.txt
+
+It should show:
+    V1 1 0 dc 1
+    R1 1 0 R_US
+
+
+================================================================================
+                                SUCCESS!
+================================================================================
+If you got here without errors, the CLI is working!
+
+The converter successfully:
+  ✓ Parsed the KiCAD file
+  ✓ Generated a netlist
+  ✓ Created output files
+
+
+================================================================================
+                          MORE CLI OPTIONS TO TRY
+================================================================================
+
+Option 1: Generate all output formats (SVG, PNG, PDF)
+------------------------------------------------------
+python -m lcapy.scripts.kicad_converter lcapy/tests/test_kicad.sch --format svg png pdf
+
+Then check with: dir test_kicad_diagram*.*
+
+
+Option 2: Use a custom output filename
+--------------------------------------
+python -m lcapy.scripts.kicad_converter lcapy/tests/test_kicad.sch --output my_circuit
+
+Output files: my_circuit_netlist.txt, my_circuit_diagram.svg
+
+
+Option 3: Get help on all available options
+-------------------------------------------
+python -m lcapy.scripts.kicad_converter --help
+
+Shows all available command-line options
+
+
+Option 4: Test with verbose output
+----------------------------------
+python -m lcapy.scripts.kicad_converter lcapy/tests/test_kicad.sch --verbose
+
+Shows detailed debug information
+
+
+Option 5: Generate netlist only (no diagrams)
+--------------------------------------------
+python -m lcapy.scripts.kicad_converter lcapy/tests/test_kicad.sch --no-diagram
+
+Faster - only creates netlist file
+
+
+================================================================================
+                         USING YOUR OWN KICAD FILE
+================================================================================
+
+Once you've tested with the test file, use your own KiCAD file:
+
+    python -m lcapy.scripts.kicad_converter YOUR_CIRCUIT.kicad_sch --show-netlist
+
+Replace YOUR_CIRCUIT.kicad_sch with your actual file path and name
+
+
+================================================================================
+                              TROUBLESHOOTING
+================================================================================
+
+Problem: "command not found"
+Solution: Make sure you're in the lcapy directory (C:\VT\GitHub\Lcapy-Program\lcapy)
+          Type: cd C:\VT\GitHub\Lcapy-Program\lcapy
+
+
+Problem: "File not found"
+Solution: Check that the test file exists:
+          Type: dir lcapy\tests\test_kicad.sch
+
+
+Problem: "ModuleNotFoundError"
+Solution: Make sure Python can find the module:
+          Type: set PYTHONPATH=%cd%;%PYTHONPATH%
+          Then run the converter again
+
+
+Problem: PNG/PDF files not created
+Solution: Install image conversion tools:
+          Type: pip install cairosvg pillow
+
+
+================================================================================
+                                 THAT'S IT!
+================================================================================
+You've successfully tested the KiCAD-to-Lcapy CLI!
+
+Next steps:
+  1. Try different options from "More CLI Options" section
+  2. Test with your own KiCAD files
+  3. Check the README_KICAD_CONVERTER.md for more advanced usage
+
+Questions? See:
+  - TESTING_GUIDE.md - Comprehensive testing guide
+  - TEST_CLI.md - Detailed CLI testing guide
+  - README_KICAD_CONVERTER.md - Full documentation
