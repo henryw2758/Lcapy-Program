@@ -110,6 +110,25 @@ class TestSpiceLineParsing:
         assert elem is not None
         assert elem.value == "PULSE 0 5 1n"
 
+    def test_value_with_semicolon(self):
+        """Test value with semicolon (Lcapy drawing directives)."""
+        elem = parse_spice_line("L1 1 2 1e-3; right, size=1.2")
+        assert elem is not None
+        assert elem.value == "1e-3"
+        # Semicolon and drawing directives should be stripped
+
+    def test_complex_value_with_semicolon(self):
+        """Test complex value with semicolon."""
+        elem = parse_spice_line("C1 2 3 1e-4; right, size=1.2, color=blue")
+        assert elem is not None
+        assert elem.value == "1e-4"
+
+    def test_plain_value_without_semicolon(self):
+        """Test plain value without semicolon still works."""
+        elem = parse_spice_line("R1 0 1 1k")
+        assert elem is not None
+        assert elem.value == "1k"
+
     def test_insufficient_parts(self):
         """Test line with insufficient parts."""
         elem = parse_spice_line("R1 N001")  # Only name and one node

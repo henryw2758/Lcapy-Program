@@ -27,6 +27,29 @@ def is_comment_or_directive(line: str) -> bool:
     return False
 
 
+def clean_value(raw_value: str) -> Optional[str]:
+    """Clean value string by removing semicolons and drawing directives.
+    
+    In Lcapy format, values may include drawing directives after semicolons.
+    Example: "1e-3; right, size=1.2" -> "1e-3"
+    
+    Args:
+        raw_value: Raw value string from netlist line
+        
+    Returns:
+        Cleaned value string (only the numeric part before semicolon)
+    """
+    if not raw_value:
+        return None
+    
+    # Split on semicolon and take first part (the actual value)
+    if ";" in raw_value:
+        clean_value = raw_value.split(";")[0].strip()
+        return clean_value if clean_value else None
+    
+    return raw_value.strip() if raw_value.strip() else None
+
+
 def parse_element_name(name: str) -> str:
     """Clean and return element name.
     
@@ -72,7 +95,7 @@ def parse_spice_line(line: str) -> Optional[Element]:
     name = parse_element_name(parts[0])
     first_node = parts[1]
     second_node = parts[2]
-    value = parts[3] if len(parts) > 3 else None
+    value = clean_value(parts[3]) if len(parts) > 3 else None
     
     # Only support 2-terminal elements for analog-only version
     # 3-terminal elements (Q, M, XU, etc.) would require more parsing
