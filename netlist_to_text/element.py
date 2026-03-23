@@ -33,9 +33,22 @@ class Element:
             '0' -> 'ground'
             'N001' -> 'node 1'
             '1' -> 'node 1'
+            '0_1' -> 'ground' (Lcapy: underscore suffix is same node)
+            '1_1' -> 'node 1' (Lcapy: underscore suffix is same node)
+            'N001_1' -> 'node 1' (Lcapy: underscore suffix is same node)
         """
         if node is None:
             return None
+        
+        # Handle Lcapy's underscore notation for wire routing
+        # e.g., "0_1" is the same as "0" (ground)
+        # e.g., "1_1" is the same as "1" (node 1)
+        if "_" in node:
+            # Strip off the underscore and any suffix after it
+            parts = node.split("_")
+            # Use the first part (the actual node number)
+            node = parts[0]
+        
         if node == "0":
             return "ground"
         if node.startswith("N0"):
