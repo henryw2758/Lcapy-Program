@@ -1,6 +1,0 @@
-======================================================================
-KiCAD-to-Lcapy Converter - Simple Test
-======================================================================
-
-Test 1: Importing KiCAD converter...
-[FAILED] Failed to import: No module named 'packaging'
