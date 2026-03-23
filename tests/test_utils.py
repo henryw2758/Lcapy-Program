@@ -17,7 +17,7 @@ class TestSpellOutMultiplier:
         """Test milli suffix."""
         assert spell_out_multiplier("1m") == "1 milli"
         assert spell_out_multiplier("10m") == "10 milli"
-
+    
     def test_suffix_micro(self):
         """Test micro suffix."""
         assert spell_out_multiplier("1u") == "1 micro"
