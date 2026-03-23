@@ -68,7 +68,9 @@ Examples:
     
     try:
         # Load the converter module
-        sys.path.insert(0, str(get_base_path()))
+        base = get_base_path()
+        sys.path.insert(0, str(base))
+        sys.path.insert(0, str(base / 'lcapy'))
         from lcapy.kicad.converter import KiCADConverter
         
         if args.verbose:

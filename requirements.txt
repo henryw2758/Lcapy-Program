@@ -1,0 +1,11 @@
+matplotlib
+scipy
+numpy
+sympy>=1.10.1
+networkx
+IPython
+setuptools
+wheel
+packaging
+importlib
+property_cached
