@@ -72,14 +72,14 @@ Examples:
         from lcapy.kicad.converter import KiCADConverter
         
         if args.verbose:
-            print(f"[*] Reading: {input_file.name}")
+            print(f"[*] Processing: {input_file.name}")
         
         # Do the conversion
         converter = KiCADConverter(str(input_file))
         netlist, components = converter.convert()
         
         if args.verbose:
-            print(f"[*] Found {len(components)} components")
+            print(f"[*] Found {len(components)} component(s)")
         
         # Print netlist to console if user asked
         if args.show_netlist:
