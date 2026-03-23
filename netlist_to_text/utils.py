@@ -26,6 +26,77 @@ def format_element_count(count: int, element_type: str) -> str:
         return f"{count} {element_type}s"
 
 
+def spell_out_multiplier(value: str) -> str:
+    """Spell out SPICE unit multipliers for accessibility.
+    
+    Converts abbreviated unit prefixes to full words for screen readers.
+    Examples:
+        '1k' -> '1 kilo'
+        '1m' -> '1 milli'
+        '1u' -> '1 micro'
+        '1e-3' -> '1 milli'
+        '1e-6' -> '1 micro'
+        '10' -> '10' (no multiplier)
+    
+    Args:
+        value: SPICE value string (e.g., '1k', '1e-3')
+        
+    Returns:
+        Value with spelled-out multiplier (e.g., '1 kilo', '1 milli')
+    """
+    if not value:
+        return value
+    
+    value = value.strip()
+    
+    # Multiplier suffix mappings
+    suffix_map = {
+        "T": "tera",
+        "G": "giga",
+        "M": "mega",
+        "k": "kilo",
+        "m": "milli",
+        "u": "micro",
+        "n": "nano",
+        "p": "pico",
+        "f": "femto",
+    }
+    
+    # Scientific notation multiplier mappings
+    exp_map = {
+        12: "tera",
+        9: "giga",
+        6: "mega",
+        3: "kilo",
+        -3: "milli",
+        -4: "milli",  # 10^-4 = 0.1 milli
+        -5: "milli",  # 10^-5 = 0.01 milli
+        -6: "micro",
+        -9: "nano",
+        -12: "pico",
+        -15: "femto",
+    }
+    
+    # Check for suffix notation (e.g., '1k', '10m')
+    if value and value[-1] in suffix_map and value[:-1].replace(".", "", 1).isdigit():
+        base = value[:-1]
+        multiplier = value[-1]
+        return f"{base} {suffix_map[multiplier]}"
+    
+    # Check for scientific notation (e.g., '1e-3', '10e+6')
+    import re
+    scientific_match = re.match(r'^([\d.]+)e([+-]?\d+)$', value, re.IGNORECASE)
+    if scientific_match:
+        base = scientific_match.group(1)
+        exponent = int(scientific_match.group(2))
+        
+        if exponent in exp_map:
+            return f"{base} {exp_map[exponent]}"
+    
+    # No multiplier found, return original value
+    return value
+
+
 def validate_spice_value(value: str) -> bool:
     """Validate if a value string is a valid SPICE value.
     

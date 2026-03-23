@@ -126,7 +126,7 @@ class Circuit:
                     # Mark as parallel connection and track the other element
                     elem1.set_parallel_connection(
                         elem2.name,
-                        f"{elem2.value} {elem2.get_element_unit(elem2.name)}" if elem2.value else elem2.get_element_type(elem2.name)
+                        elem2.get_value_text() if elem2.value else elem2.get_element_type(elem2.name)
                     )
                     # Mark elem2 as having a parallel description
                     elem2.parallel_connection_present = True
@@ -186,7 +186,7 @@ class Circuit:
                 elem1.set_series_connection(
                     elem2.name,
                     node,
-                    f"{elem2.value} {elem2.get_element_unit(elem2.name)}" if elem2.value else elem2.get_element_type(elem2.name)
+                    elem2.get_value_text() if elem2.value else elem2.get_element_type(elem2.name)
                 )
                 
                 # Mark both elements as processed and mark elem2 as having a series description

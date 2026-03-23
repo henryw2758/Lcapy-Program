@@ -1,5 +1,7 @@
 """Element class representing a circuit component."""
 
+from .utils import spell_out_multiplier
+
 
 class Element:
     """Represents a circuit element with its properties and connection info."""
@@ -132,10 +134,13 @@ class Element:
                 }
                 return waveform_map.get(keyword, "") + ","
         
+        # Spell out multipliers for accessibility (e.g., '1e-3' -> '1 milli')
+        spelled_value = spell_out_multiplier(self.value)
+        
         # Regular value with unit
         unit = self.get_element_unit()
         if unit:
-            return f"{self.value} {unit}"
+            return f"{spelled_value} {unit}"
         return ""
 
     def set_parallel_connection(self, elem2_name, elem2_value):
