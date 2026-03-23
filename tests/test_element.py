@@ -33,6 +33,28 @@ class TestElementCreation:
         assert elem.first_node == "node 1"
         assert elem.second_node == "node 2"
 
+    def test_lcapy_underscore_notation(self):
+        """Test handling of Lcapy's underscore notation for wire routing."""
+        # Ground with underscore suffix
+        elem = Element("R1", "0_1", "1", "1k")
+        assert elem.first_node == "ground"
+        assert elem.second_node == "node 1"
+
+        # Node 1 with underscore suffix
+        elem = Element("R2", "1_1", "2", "2k")
+        assert elem.first_node == "node 1"
+        assert elem.second_node == "node 2"
+
+        # Node 2 with underscore suffix
+        elem = Element("R3", "2", "2_1", "3k")
+        assert elem.first_node == "node 2"
+        assert elem.second_node == "node 2"
+
+        # N-prefixed nodes with underscore
+        elem = Element("R4", "N001_1", "N002", "4k")
+        assert elem.first_node == "node 1"
+        assert elem.second_node == "node 2"
+
 
 class TestElementTypeDetection:
     """Test element type detection."""
