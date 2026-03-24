@@ -11,6 +11,9 @@ import os
 from pathlib import Path
 import argparse
 
+from lcapy.kicad.converter import KiCADConverter
+from lcapy.kicad.diagram_generator import KiCADDiagramGenerator
+
 
 def get_base_path():
     """Get base path regardless of how script is run."""
