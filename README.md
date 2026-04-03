@@ -1,205 +1,256 @@
 # KiCAD to Lcapy Converter
 
-Convert KiCAD 6+ schematic files (.kicad_sch) to Lcapy circuit netlists and diagrams automatically.
+A Python tool to convert KiCAD schematic files (`.kicad_sch`) to Lcapy netlists with visual output in SVG and PNG formats.
 
 ## Features
 
-- **Accurate Conversion**: Parses KiCAD schematic files and generates valid Lcapy netlists
-- **Diagram Generation**: Creates SVG and PNG circuit diagrams that match your KiCAD layout
-- **Component Support**: Handles resistors, capacitors, inductors, voltage sources, current sources, and ground connections
-- **GUI Application**: Simple desktop application - just upload a file and get results
-- **CLI Tools**: Command-line interface for automation and scripting
+- Parse KiCAD 6+ S-expression schematic files
+- Extract components, wires, and junctions
+- Generate Lcapy-compatible netlists
+- Create SVG and PNG visualizations of- Simple GUI interface
+- Command-line interface
+
+## Requirements
+
+- Python 3.8+
+- Pillow (for PNG generation)
 
 ## Installation
 
-### Prerequisites
-- Python 3.8+
-- pip package manager
+### 1. Clone the repository
 
-### Setup
-
-1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone https://github.com/yourusername/Lcapy-Program.git
 cd Lcapy-Program
 ```
 
-2. Install dependencies:
+### 2. Install dependencies
+
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Install lcapy in development mode:
+Or manually:
 ```bash
-pip install -e lcapy
+pip install Pillow
 ```
 
 ## Usage
 
 ### GUI Application (Recommended)
 
-Run the desktop application:
+Run the graphical user interface:
+
 ```bash
-python kicad2lcapy_gui.py
+python kicad_gui.py
 ```
 
-**How to use:**
-1. Click "Browse..." to select your .kicad_sch file
-2. (Optional) Choose output directory
-3. Select which outputs you want (SVG, PNG, Netlist)
-4. Click "CONVERT"
-5. Get instant results with netlist preview
-
-**Outputs:**
-- `*_netlist.txt` - Lcapy-ready netlist format
-- `*_diagram.svg` - Vector diagram (scalable)
-- `*_diagram.png` - Raster diagram (high resolution)
-
-### Command-Line Interface
-
-For automated workflows:
-
+Or on Windows:
 ```bash
-python kicad2lcapy_cli.py circuit.kicad_sch
+run_gui.bat
 ```
 
-**Options:**
-- `-o, --output` - Output filename prefix
-- `-f, --format` - Diagram format (svg, png, pdf)
-- `-n, --netlist` - Save netlist to file
-- `-s, --show-netlist` - Print netlist to console
-- `--no-diagram` - Skip diagram generation
-- `-v, --verbose` - Detailed output
+**GUI Steps:**
+1. Click "Browse" to select a `.kicad_sch` file
+2. Choose output options (netlist, SVG, PNG)
+3. Click "Convert" to generate outputs
+4. Files will be created in the same directory as the input file
 
-**Examples:**
+### Command Line
+
 ```bash
-# Generate all outputs
-python kicad2lcapy_cli.py circuit.kicad_sch
+python kicad_to_lcapy.py <input.kicad_sch> [output_directory]
+```
 
-# Only netlist, no diagrams
-python kicad2lcapy_cli.py circuit.kicad_sch --no-diagram
+Or on Windows:
+```bash
+run_converter.bat
+```
 
-# Show netlist and exit
-python kicad2lcapy_cli.py circuit.kicad_sch --show-netlist --no-diagram
+## Output Files
 
-# Custom output filename
-python kicad2lcapy_cli.py circuit.kicad_sch -o my_circuit
+The converter generates:
+
+- `*_netlist.txt` - Lcapy-compatible netlist
+- `*_output.svg` - SVG schematic visualization
+- `*_output.png` - PNG schematic visualization (if Pillow is installed)
+
+### Example
+
+```bash
+python kicad_gui.py
+# Select: test.kicad_sch
+# Output: test_netlist.txt, test_output.svg, test_output.png
 ```
 
 ## Project Structure
 
 ```
-├── kicad2lcapy_cli.py          # Command-line interface
-├── kicad2lcapy_gui.py          # Desktop GUI application
-├── requirements.txt             # Python dependencies
-├── README.md                    # This file
-├── LICENSE                      # License information
-│
-└── lcapy/
+Lcapy-Program/
+├── README.md                   # This file
+├── LICENSE                     # MIT License
+├── requirements.txt            # Python dependencies
+├── .gitignore                  # Git ignore rules
+├── kicad_gui.py               # GUI application
+├── kicad_to_lcapy.py           # Command-line converter
+├── run_gui.bat                 # GUI launcher (Windows)
+├── run_converter.bat           # Converter launcher (Windows)
+├── test.kicad_sch             # Test schematic file
+├── demo.kicad_sch             # Demo schematic file
+└── lcapy/                      # Lcapy library
     └── lcapy/
-        ├── kicad/               # Main converter module
-        │   ├── __init__.py
-        │   ├── parser.py        # KiCAD S-expression parser
-        │   ├── converter.py     # Netlist generator
-        │   ├── component_map.py # Component type mapping
-        │   └── diagram_generator.py  # SVG/PNG diagram creation
-        │
-        └── tests/
-            ├── test_kicad_converter.py
-            └── test_kicad.sch
+        └── kicad/              # KiCAD converter module
+            ├── __init__.py      # Module initialization
+            ├── parser.py        # S-expression parser
+            ├── converter.py     # Main converter logic
+            └── svg_generator.py # SVG/PNG generation
 ```
 
 ## How It Works
 
-### 1. Parsing
-- Reads KiCAD 6+ S-expression format
-- Extracts symbols, wires, junctions, and properties
-- Preserves exact component positions and rotations
+### 1. Parsing (`parser.py`)
 
-### 2. Component Mapping
-- Maps KiCAD library IDs to Lcapy component types
-- Extracts component values from properties
-- Handles pin definitions and connections
+Reads KiCAD's S-expression format and extracts:
+- Component symbols with positions, rotations, values
+- Wire connections with start/end points
+- Junction points (connection dots)
 
-### 3. Net Tracing
-- Traces wires to determine electrical connections
-- Groups coordinates into logical networks
-- Assigns node names for Lcapy
+### 2. Conversion (`converter.py`)
 
-### 4. Netlist Generation
-- Creates Lcapy-compatible netlist format
-- Generates node names (n1, n2, gnd, etc.)
-- Uses component references and values
+- Maps KiCAD component types to Lcapy types
+- Generates Lcapy-compatible netlist format
+- Provides structured component data for visualization
 
-### 5. Diagram Generation
-- Creates SVG diagram using original KiCAD coordinates
-- Scales appropriately for screen display
-- Also generates PNG raster version
-- No LaTeX required
+### 3. Visualization (`svg_generator.py`)
+
+- Creates SVG/PNG files showing the schematic
+- Draws components with proper shapes:
+  - Zigzag resistors
+  - Circles for voltage sources (+/- symbols)
+  - Ground symbols
+- Renders wires and junctions
+- Applies rotations and positioning from KiCAD
 
 ## Supported Components
 
-| Component | KiCAD Symbols | Lcapy Type |
-|-----------|--------------|-----------|
-| Resistor | R_US, R | R |
-| Capacitor | C_US, C | C |
-| Inductor | L_US, L, L_Iron | L |
-| Voltage Source | VDC, VAC, Battery_Cell | V |
-| Current Source | IDC, IAC | I |
-| Ground | GND, 0 | 0 (node 0) |
-| Diode | D, D_US | D |
-
-## Output Format
-
-### Netlist Example
-```
-V1 n1 n2 dc 1
-R1 n2 n3 1k
-```
-
-### SVG Diagram
-- Vector-based, scalable
-- Shows component symbols, wires, and connections
-- Matches original KiCAD layout
-- Can be edited in any SVG editor
-
-### PNG Diagram
-- Raster image, high resolution
-- Ready for presentations and reports
-- Matches SVG layout
+| KiCAD Symbol | Lcapy Type | Description |
+|--------------|------------|-------------|
+| Device:R | R | Resistor |
+| Device:R_US | R | Resistor (US symbol) |
+| Device:C | C | Capacitor |
+| Device:L | L | Inductor |
+| Simulation_SPICE:VDC | V | DC Voltage Source |
+| Simulation_SPICE:VAC | V | AC Voltage Source |
+| Simulation_SPICE:IDC | I | DC Current Source |
+| Simulation_SPICE:IAC | I | AC Current Source |
+| Simulation_SPICE:0 | GND | Ground |
 
 ## Troubleshooting
 
-**"No file selected" error**
-- Make sure file ends with `.kicad_sch`
-- File must be KiCAD 6.0+
+### Import Errors
 
-**Diagram generation fails but netlist works**
-- Netlist is still valid for Lcapy
-- Check that Pillow is installed: `pip install Pillow`
+**Problem:** `ModuleNotFoundError: No module named 'lcapy.kicad'`
 
-**Missing components in diagram**
-- Unsupported component types are skipped
-- Check supported components list above
+**Solution:** Ensure you're running from the project root directory and `lcapy` folder is in the Python path.
 
-## Testing
-
-Run the test suite:
 ```bash
-pytest lcapy/lcapy/tests/test_kicad_converter.py -v
+cd Lcapy-Program
+python kicad_gui.py
 ```
 
-## License
+### No Output Files Generated
 
-See LICENSE file for details.
+**Problem:** Converter runs but no files are created.
+
+**Solution:** 
+- Check the input file is a valid `.kicad_sch` file
+- Verify you have write permissions in the output directory
+- Look for error messages in the console
+
+### Missing Components in Output
+
+**Problem:** Some components don't appear in the netlist or visualization.
+
+**Solution:**
+- Verify component reference prefixes (R, C, L, V, I)
+- Check that components have valid lib_id values
+- Ground symbols are excluded from netlist but shown in visualization
+
+### PNG Generation Fails
+
+**Problem:** SVG works but PNG generation fails.
+
+**Solution:** Install Pillow:
+```bash
+pip install Pillow
+```
+
+## Example Netlist Output
+
+For a simple circuit with a voltage source and resistor:
+
+```
+V1 1 2 dc 1
+R1 3 4 R_US
+```
+
+## Development
+
+### Running Tests
+
+```bash
+cd Lcapy-Program
+python -c "from lcapy.kicad.converter import KiCADConverter; c=KiCADConverter('test.kicad_sch'); c.convert(); print(c.get_netlist())"
+```
+
+### Adding New Component Types
+
+Edit `converter.py` and add mappings to the `_get_component_type` method:
+
+```python
+mapping = {
+    'Device:R': 'R',
+    'YourLibrary:YourComponent': 'X',  # Add new type
+}
+```
+
+### Customizing Visualization
+
+Edit `svg_generator.py` to:
+- Change component sizes
+- Modify drawing styles
+- Add new component shapes
+
+## Limitations
+
+- Currently supports KiCAD 6+ format only
+- Netlist uses sequential node numbering (not actual net names)
+- Complex hierarchical schematics not fully supported
+- Some component properties may not be preserved
 
 ## Contributing
 
-Contributions welcome! Please ensure:
-- Code follows existing style
-- Tests pass: `pytest lcapy/lcapy/tests/`
-- Documentation is updated
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+MIT License - see LICENSE file for details.
+
+## Acknowledgments
+
+- Built for use with the Lcapy circuit analysis library
+- KiCAD S-expression format documentation
 
 ## Support
 
-For issues or questions, please open an issue on the project repository.
+For issues, questions, or feature requests:
+- Open an issue on GitHub
+- Check existing issues for solutions
+
+---
+
+**Note:** This tool is designed to work with the Lcapy symbolic circuit analysis library. For more information about Lcapy, visit: https://lcapy.readthedocs.io/
