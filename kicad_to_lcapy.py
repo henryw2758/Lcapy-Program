@@ -5,10 +5,10 @@ import sys
 import os
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent / 'lcapy'))
+sys.path.insert(0, str(Path(__file__).parent))
 
-from lcapy.kicad.converter import KiCADConverter
-from lcapy.kicad.svg_generator import SVGCircuitGenerator, PNGCircuitGenerator
+from kicad_converter.converter import KiCADConverter
+from kicad_converter.svg_generator import SVGCircuitGenerator, PNGCircuitGenerator
 
 
 def main():
