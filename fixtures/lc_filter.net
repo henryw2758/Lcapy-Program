@@ -1,6 +1,0 @@
-* LC filter circuit
-* More complex analog circuit
-
-L1 0 1 10m
-C1 1 2 1u
-R1 2 0 1k

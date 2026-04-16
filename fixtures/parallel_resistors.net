@@ -1,5 +1,0 @@
-* Parallel resistors
-* Two resistors connected in parallel between ground and node 1
-
-R1 0 1 1k
-R2 0 1 2k
