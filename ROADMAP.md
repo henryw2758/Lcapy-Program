@@ -1,205 +1,142 @@
-# KiCAD to Circuitikz - Branch Roadmap
+# KiCAD to Circuitikz - Development Roadmap
 
 ## Overview
 
-This branch implements a tool to convert KiCAD Eeschema schematic files (`.sch`) into:
-1. **Circuitikz LaTeX code** - For high-quality schematic drawings in LaTeX/Manim
-2. **Netlist output** - Component-to-node mapping (no analysis, just structure)
+This is a **mildly working prototype** for converting KiCAD schematics to Circuitikz LaTeX code and visual outputs.
 
-**Reference**: Based on [uwezi/circuitikz_import](https://github.com/uwezi/circuitikz_import) for KiCAD v5.1.5, but modernized and extended.
+**Current Status**: Phase 1-4 partially complete (basic functionality working, known limitations)
 
 ---
 
-## Project Structure
+## Progress Tracking
 
-```
-kicad2circuitikz/
-├── src/kicad2circuitikz/
-│   ├── __init__.py
-│   ├── cli.py                 # Command-line interface
-│   ├── parsers/
-│   │   ├── __init__.py
-│   │   ├── base_parser.py     # Abstract parser interface
-│   │   ├── kicad_v5.py        # KiCAD 5.x .sch parser
-│   │   └── kicad_v6.py        # KiCAD 6+ .kicad_sch parser (future)
-│   ├── mappers/
-│   │   ├── __init__.py
-│   │   ├── component_map.py   # KiCAD → Circuitikz component mapping
-│   │   ├── position_map.py    # Coordinate transformation
-│   │   └── rotation_map.py    # Direction/angle handling
-│   └── exporters/
-│       ├── __init__.py
-│       ├── circuitikz.py      # LaTeX/Circuitikz output
-│       └── netlist.py         # Netlist output (component-node mapping)
-├── tests/
-│   ├── samples/
-│   │   ├── kicad_v5/          # Sample KiCAD 5 .sch files
-│   │   └── kicad_v6/          # Sample KiCAD 6+ .kicad_sch files
-│   ├── test_parser.py
-│   ├── test_mapper.py
-│   └── test_exporter.py
-├── examples/                  # Example outputs
-├── ROADMAP.md                 # This file
-└── README.md
-```
+### ✅ Phase 1: Core Parser (KiCAD v5)
+**Status**: Complete
 
----
-
-## Phase 1: Core Parser (KiCAD v5)
-
-**Goal**: Parse KiCAD 5.x `.sch` files into a structured representation
-
-### Tasks
-- [ ] Implement `kicad_v5.py` parser
-  - [ ] Parse wire segments
-  - [ ] Parse components (`$comp` to `$endcomp` blocks)
-  - [ ] Extract component properties (label, value, position, rotation)
-  - [ ] Extract component type (R, C, L, VDC, VSIN, IDC, ISIN, D, Q_NPN, etc.)
-  - [ ] Handle power/ground symbols
-  - [ ] Parse connection nodes
-- [ ] Create data models
-  - [ ] `Component` class - stores component data
-  - [ ] `Wire` class - stores wire connections
-  - [ ] `Node` class - tracks net connections
-- [ ] Add basic tests with sample KiCAD v5 files
+- [x] Implement `parser.py` for KiCAD v5 .sch files
+- [x] Parse wire segments
+- [x] Parse components (`$comp` to `$endcomp` blocks)
+- [x] Extract component properties (label, value, position, rotation)
+- [x] Extract component type (R, C, L, VDC, VSIN, IDC, ISIN, D, Q_NPN, etc.)
+- [x] Handle power/ground symbols
+- [x] Create data models (Component, Wire classes)
+- [x] Add basic tests
 
 **Output**: Parsed Python objects representing circuit topology
 
 ---
 
-## Phase 2: Component Mapping
+### ✅ Phase 2: KiCAD v6+ Support
+**Status**: Complete
 
-**Goal**: Map KiCAD components to Circuitikz equivalents
+- [x] Implement `kicad_v6_parser.py` for .kicad_sch files (S-expression format)
+- [x] Parse S-expression format
+- [x] Handle new symbol library format
+- [x] Extract same data as v5 parser
+- [x] Auto-detect v5 vs v6 format
+- [x] Add v6 sample file (test.kicad_sch)
 
-### Tasks
-- [ ] Create `component_map.py`
-  - [ ] Define KiCAD → Circuitikz type mappings
-    - `Device:R` → `R` (resistor)
-    - `Device:C` → `C` (capacitor)
-    - `Device:L` → `american inductor` (inductor)
-    - `Device:D` → `Do` (diode)
-    - `Device:D_ZENER` → `zDo` (zener diode)
-    - `Device:D_SCHOTTKY` → `sDo` (schottky diode)
-    - `Device:LED` → `leDo` (LED)
-    - `Device:VDC` → `V` (DC voltage source)
-    - `Device:VSIN` → `sV` (AC voltage source)
-    - `Device:IDC` → `I` (DC current source)
-    - `Device:ISIN` → `sI` (AC current source)
-    - `Device:Q_NPN_*` → `npn` (NPN transistor)
-    - `Device:Q_NMOS_DSG` → `nigfete` (NMOS transistor)
-    - `Device:Earth` → `ground` (ground symbol)
-  - [ ] Handle value parsing (e.g., "1k" → "1k", "10V" → "10V")
-  - [ ] Handle label extraction (F1 field)
-- [ ] Create `position_map.py`
-  - [ ] Convert KiCAD coordinates (mils) to cm/cm
-  - [ ] Handle scale factor (default: 200 KiCAD units = 1 cm)
-- [ ] Create `rotation_map.py`
-  - [ ] Parse KiCAD rotation matrix `[a b c d]`
-  - [ ] Convert to Circuitikz `rotate={angle}` parameter
-  - [ ] Determine pin positions after rotation
-
-**Output**: Mapped component data ready for Circuitikz generation
+**Output**: Unified parser that handles both v5 and v6 formats
 
 ---
 
-## Phase 3: Circuitikz Export
+### ⚠️ Phase 3: Component Mapping
+**Status**: Partially Complete
 
-**Goal**: Generate Circuitikz LaTeX code
+- [x] Define KiCAD → Circuitikz type mappings (basic components)
+- [x] Handle value parsing (numeric extraction)
+- [x] Handle label extraction
+- [x] Create position mapper with scaling
+- [x] Create rotation mapper (basic 0°, 90°, 180°, 270°)
+- [ ] **Needs improvement**: More accurate coordinate transformation
+- [ ] **Needs improvement**: Better component sizing
+- [ ] **Needs improvement**: Handle arbitrary rotation angles
+- [ ] **Needs improvement**: Pin position calculation after rotation
 
-### Tasks
-- [ ] Implement `circuitikz.py` exporter
-  - [ ] Generate `\begin{circuitikz}` ... `\end{circuitikz}` wrapper
-  - [ ] Convert wires to `\draw (x1,y1) -- (x2,y2);`
-  - [ ] Convert components using `to[TYPE, l=LABEL, a=VALUE]` syntax
-  - [ ] Handle special components (transistors, ground) with `node[TYPE, rotate={}]`
-  - [ ] Apply coordinate scaling (KiCAD units → cm)
-  - [ ] Flip Y-axis (KiCAD Y increases downward, Circuitikz Y increases upward)
-- [ ] Add output modes
-  - [ ] Raw LaTeX output (complete `.tex` file)
-  - [ ] Manim format (MathTex with circuitikz environment)
-  - [ ] Circuitikz-only code snippet
-- [ ] Add tests comparing generated output to expected Circuitikz
-
-**Output**: Valid Circuitikz LaTeX code
+**Known Issues**:
+- Scale factor may not be optimal for all circuits
+- Component sizes are approximate
+- Complex rotations may not render correctly
 
 ---
 
-## Phase 4: Netlist Export
+### ⚠️ Phase 4: Circuitikz Export
+**Status**: Partially Complete
 
-**Goal**: Generate netlist (component-node mapping only, no analysis)
+- [x] Implement `exporter.py` for Circuitikz LaTeX code
+- [x] Generate `\begin{circuitikz}` wrapper
+- [x] Convert wires to `\draw` commands
+- [x] Convert components using `to[TYPE]` syntax
+- [x] Handle special components (ground) with `node[]`
+- [x] Apply coordinate scaling and Y-axis flip
+- [x] Wrap in complete LaTeX document
+- [ ] **Needs improvement**: Better component positioning
+- [ ] **Needs improvement**: Wire routing
+- [ ] **Needs improvement**: Connection points accuracy
 
-### Tasks
-- [ ] Implement `netlist.py` exporter
-  - [ ] Extract component names, types, and connected nodes
-  - [ ] Build node-to-component mapping
-  - [ ] Generate simple netlist format:
-    ```
-    R1 1 2 1k
-    C1 2 3 1uF
-    V1 0 1 10V
-    ```
-  - [ ] Optional: SPICE format output
-- [ ] Add tests verifying netlist correctness
-
-**Output**: Component-node netlist (text/SPICE format)
-
----
-
-## Phase 5: KiCAD v6+ Support (Future)
-
-**Goal**: Support KiCAD 6+ `.kicad_sch` format (S-expression based)
-
-### Tasks
-- [ ] Implement `kicad_v6.py` parser
-  - [ ] Parse S-expression format
-  - [ ] Handle new symbol library format
-  - [ ] Extract same data as v5 parser
-- [ ] Reuse existing mapper and exporter modules
-- [ ] Add v6 sample files and tests
+**Known Issues**:
+- Component positions may not match KiCAD exactly
+- Wires may not connect perfectly to components
+- No automatic layout adjustment
 
 ---
 
-## Phase 6: CLI and Usability
+### ✅ Phase 5: PDF/PNG/SVG Export
+**Status**: Complete
 
-**Goal**: Easy-to-use command-line interface
+- [x] Implement `pdf_exporter.py` using matplotlib
+- [x] Draw components (R, C, L, V, ground, etc.)
+- [x] Draw wires
+- [x] Support PDF output (vector)
+- [x] Support PNG output (300 DPI)
+- [x] Support SVG output (vector)
+- [x] No external tools required
+- [ ] **Needs improvement**: Better visual quality
+- [ ] **Needs improvement**: More accurate component symbols
+- [ ] **Needs improvement**: Better wire routing
 
-### Tasks
-- [ ] Implement `cli.py`
-  - [ ] Argument parsing (input file, output format, output file)
-  - [ ] Input file detection (v5 vs v6)
-  - [ ] Error handling and validation
-- [ ] Create installation script (`setup.py` or `pyproject.toml`)
-  - [ ] Package as `kicad2circuitikz`
-  - [ ] Console script entry point
-- [ ] Add example usage in README
-
----
-
-## Phase 7: Additional Features (Optional)
-
-- [ ] Component library extension (add more component types)
-- [ ] Custom component mapping configuration
-- [ ] Multi-page schematic support
-- [ ] Hierarchical sheet support
-- [ ] Subcircuit (.subckt) extraction
-- [ ] GUI for preview/editing before export
+**Advantage**: No pdflatex or ImageMagick required!
 
 ---
 
-## Component Coverage Goals
+### ⚠️ Phase 6: Netlist Export
+**Status**: Partially Complete
 
-### Phase 1-3 (Initial)
-- [x] Resistors (R)
-- [x] Capacitors (C)
-- [x] Inductors (L)
-- [x] Voltage sources (DC, AC/SIN)
-- [x] Current sources (DC, AC/SIN)
-- [x] Diodes (standard, zener, schottky, LED)
-- [x] Transistors (NPN, NMOS)
-- [x] Ground/Power symbols
-- [x] Wires and connections
+- [x] Implement basic netlist exporter
+- [x] List components with types and values
+- [x] List wire segments with coordinates
+- [x] Save as text file
+- [ ] **Not implemented**: Actual node mapping
+- [ ] **Not implemented**: Circuit topology analysis
+- [ ] **Not implemented**: SPICE format output
+- [ ] **Not implemented**: Connection verification
 
-### Future Extensions
+**Current Output**: Component and wire listing (not a true netlist)
+
+**Planned**: Real netlist with node connectivity
+
+---
+
+### ⚠️ Phase 7: CLI and Usability
+**Status**: Partially Complete
+
+- [x] Implement `gui.py` with Tkinter
+- [x] File browser for input selection
+- [x] Output directory and name selection
+- [x] Format selection checkboxes
+- [x] Progress indication
+- [x] Output preview area
+- [x] Implement `test.py` CLI script
+- [ ] **Needs improvement**: Better error messages
+- [ ] **Needs improvement**: Batch processing
+- [ ] **Needs improvement**: Command-line arguments
+- [ ] **Needs improvement**: Configuration file support
+
+---
+
+## Future Phases (Not Started)
+
+### Phase 8: Enhanced Component Support
 - [ ] PNP, PMOS transistors
 - [ ] Op-amps
 - [ ] Transformers
@@ -208,50 +145,87 @@ kicad2circuitikz/
 - [ ] Coupled inductors
 - [ ] Custom symbols
 
----
+### Phase 9: Advanced Features
+- [ ] Multi-page schematic support
+- [ ] Hierarchical sheet support
+- [ ] Subcircuit (.subckt) extraction
+- [ ] Component library management
+- [ ] Custom component mapping configuration
+- [ ] Template system for output
 
-## Testing Strategy
-
-1. **Unit tests** - Test each parser/mapper/exporter independently
-2. **Integration tests** - Test full pipeline: KiCAD file → Circuitikz/Netlist
-3. **Sample files** - Include example KiCAD schematics for:
-   - Simple voltage divider
-   - RC circuit
-   - RLC circuit
-   - Transistor amplifier
-   - Multi-component circuits
-4. **Output validation** - Verify generated LaTeX compiles and produces correct drawings
-
----
-
-## Dependencies
-
-```
-- Python 3.8+
-- re (standard library)
-- numpy (for matrix transformations in rotation handling)
-- pytest (for testing)
-```
+### Phase 10: Quality Improvements
+- [ ] Accurate node mapping in netlist
+- [ ] Automatic layout adjustment
+- [ ] Wire routing optimization
+- [ ] Better error handling and validation
+- [ ] Unit tests
+- [ ] Performance optimization
 
 ---
 
-## Notes
+## Known Limitations (Current Prototype)
 
-- No Lcapy circuit analysis - this is purely structural conversion
-- Coordinate system: KiCAD uses mils (1 mil = 0.001 inch), Circuitikz uses cm
-- Scale factor: 200 KiCAD units = 1 cm (adjustable)
-- Y-axis flip required: KiCAD (0,0) is top-left, Circuitikz (0,0) is bottom-left
+1. **Positioning**: Component positions are approximate
+2. **Netlist**: No actual circuit connectivity analysis
+3. **Complex circuits**: Multi-page/hierarchical schematics not supported
+4. **Component coverage**: Basic components only
+5. **Rotation**: Limited rotation support
+6. **Error handling**: Minimal validation
+7. **Documentation**: Incomplete
 
 ---
 
-## Progress
+## Component Coverage
 
-- [x] Project structure created
-- [x] ROADMAP documented
-- [ ] Phase 1: Core Parser (KiCAD v5)
-- [ ] Phase 2: Component Mapping
-- [ ] Phase 3: Circuitikz Export
-- [ ] Phase 4: Netlist Export
-- [ ] Phase 5: KiCAD v6+ Support
-- [ ] Phase 6: CLI and Usability
-- [ ] Phase 7: Additional Features
+### ✅ Fully Supported
+- Resistors (R, R_US)
+- Capacitors (C)
+- Inductors (L)
+- Voltage sources (VDC, VSIN)
+- Current sources (IDC, ISIN)
+- Diodes (D, D_ZENER, D_SCHOTTKY)
+- LEDs (LED)
+- Ground symbols
+
+### ⚠️ Partially Supported
+- Transistors (NPN, NMOS) - basic parsing, limited rendering
+
+### ❌ Not Supported
+- PNP, PMOS transistors
+- Op-amps
+- Transformers
+- Switches
+- Potentiometers
+- Custom symbols
+
+---
+
+## Next Steps (Priority Order)
+
+1. **Fix positioning** - Improve coordinate scaling and component placement
+2. **Better netlist** - Implement actual node mapping
+3. **More components** - Add missing component types
+4. **Error handling** - Better validation and error messages
+5. **Documentation** - Add examples and usage guide
+6. **Testing** - Add unit tests
+
+---
+
+## Contributing
+
+This is early-stage software. If you want to contribute:
+
+1. Pick a task from the "Needs improvement" sections above
+2. Check the relevant module (parser, exporter, etc.)
+3. Write tests for your changes
+4. Update this ROADMAP.md with your progress
+5. Submit a pull request
+
+---
+
+## Reference Implementation
+
+- Original reference: [uwezi/circuitikz_import](https://github.com/uwezi/circuitikz_import)
+- KiCAD v5 .sch format documentation
+- KiCAD v6+ .kicad_sch format (S-expression)
+- Circuitikz documentation: [CTAN circuitikz](https://ctan.org/pkg/circuitikz)
