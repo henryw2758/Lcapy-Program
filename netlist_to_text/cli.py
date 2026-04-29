@@ -54,6 +54,12 @@ Examples:
         help="Show parsing details and debug information"
     )
     
+    parser.add_argument(
+        "--no-rename",
+        action="store_true",
+        help="Keep original node names instead of renaming complex ones to simple numbers"
+    )
+    
     args = parser.parse_args()
     
     # Create circuit object
@@ -130,6 +136,14 @@ Examples:
             import traceback
             traceback.print_exc()
         sys.exit(1)
+    
+    # Rename complex nodes to simple numbers (default behaviour)
+    if not args.no_rename:
+        mapping = circuit.rename_nodes()
+        if mapping:
+            print("Renamed nodes:", file=sys.stderr)
+            for original, renamed in mapping.items():
+                print(f"  {original} -> {renamed}", file=sys.stderr)
     
     # Generate description
     if args.verbose:

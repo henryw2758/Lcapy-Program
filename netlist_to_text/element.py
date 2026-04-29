@@ -33,26 +33,34 @@ class Element:
         
         Examples:
             '0' -> 'ground'
+            'GND' -> 'ground'
             'N001' -> 'node 1'
             '1' -> 'node 1'
             '0_1' -> 'ground' (Lcapy: underscore suffix is same node)
             '1_1' -> 'node 1' (Lcapy: underscore suffix is same node)
             'N001_1' -> 'node 1' (Lcapy: underscore suffix is same node)
+            'Net-_R1-Pad1_' -> 'Net-_R1-Pad1_' (KiCAD: kept as-is, renaming happens later)
         """
         if node is None:
             return None
         
+        # Handle ground variants (case-insensitive)
+        if node.upper() == "GND" or node == "0":
+            return "ground"
+        
         # Handle Lcapy's underscore notation for wire routing
         # e.g., "0_1" is the same as "0" (ground)
         # e.g., "1_1" is the same as "1" (node 1)
+        # Only strip the underscore suffix when the base part is a simple
+        # numeric or N-prefixed node (Lcapy pattern), NOT for KiCAD names
+        # like "Net-_R1-Pad1_" where the part before _ is not numeric.
         if "_" in node:
-            # Strip off the underscore and any suffix after it
-            parts = node.split("_")
-            # Use the first part (the actual node number)
-            node = parts[0]
+            base = node.split("_")[0]
+            if base == "0":
+                return "ground"
+            if base.isdigit() or (base.upper().startswith("N") and base[1:].isdigit()):
+                node = base
         
-        if node == "0":
-            return "ground"
         if node.startswith("N0"):
             try:
                 return f"node {int(node[2:])}"

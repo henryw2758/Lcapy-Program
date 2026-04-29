@@ -72,18 +72,19 @@ def spell_out_multiplier(value: str) -> str:
     suffix_match = re.match(r'^([\d.]+)([kMGTmunpf])$', value, re.IGNORECASE)
     if suffix_match:
         base_num = float(suffix_match.group(1))
-        suffix = suffix_match.group(2).upper()
+        suffix = suffix_match.group(2)
         
-        # Map suffixes to unit names (handle both cases)
+        # Map suffixes to unit names (case-sensitive: M=mega, m=milli)
         suffix_map = {
-            "T": "tera", "t": "tera",
-            "G": "giga", "g": "giga",
-            "M": "mega", "m": "milli",
-            "K": "kilo", "k": "kilo",
+            "T": "tera",
+            "G": "giga",
+            "M": "mega",
+            "k": "kilo", "K": "kilo",
             "U": "micro", "u": "micro",
-            "N": "nano", "n": "nano",
-            "P": "pico", "p": "pico",
-            "F": "femto", "f": "femto",
+            "n": "nano",
+            "p": "pico",
+            "f": "femto",
+            "m": "milli",
         }
         
         # Get the target unit from suffix

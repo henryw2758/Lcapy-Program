@@ -95,7 +95,25 @@ def parse_spice_line(line: str) -> Optional[Element]:
     name = parse_element_name(parts[0])
     first_node = parts[1]
     second_node = parts[2]
-    value = clean_value(parts[3]) if len(parts) > 3 else None
+    
+    # Determine value index: KiCAD and some SPICE exports put DC/AC or
+    # waveform keywords (PULSE, EXP, SINE, SFFM) in parts[3], pushing
+    # the actual value to parts[4].  For DC/AC we only need the magnitude;
+    # for waveforms we keep the full keyword+params string.
+    source_keywords = {"DC", "AC"}
+    waveform_keywords = {"PULSE", "EXP", "SINE", "SFFM"}
+    
+    value = None
+    if len(parts) > 3:
+        token3_upper = parts[3].upper()
+        if token3_upper in source_keywords:
+            # e.g. "V1 node1 node2 DC 1" — value is the next token
+            value = clean_value(parts[4]) if len(parts) > 4 else None
+        elif token3_upper in waveform_keywords:
+            # e.g. "V1 node1 node2 PULSE 0 5 1m 1m 1m 10m 20m"
+            value = clean_value(" ".join(parts[3:]))
+        else:
+            value = clean_value(parts[3])
     
     # Only support 2-terminal elements for analog-only version
     # 3-terminal elements (Q, M, XU, etc.) would require more parsing

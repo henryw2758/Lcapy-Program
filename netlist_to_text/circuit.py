@@ -1,7 +1,8 @@
 """Circuit class for analyzing and describing circuits."""
 
 
-from typing import List, Set, Dict
+import re
+from typing import List, Set, Dict, Tuple
 from .element import Element
 from .parser import parse_netlist_file, parse_lcapy_netlist
 
@@ -217,6 +218,82 @@ class Circuit:
             return float('inf')  # Put unknown nodes last
         
         self.elements.sort(key=node_sort_key)
+
+    @staticmethod
+    def _is_simple_node(name: str) -> bool:
+        """Check if a node name is already a simple readable form.
+
+        Simple nodes are: 'ground', or 'node <integer>'.
+
+        Args:
+            name: Node name string.
+
+        Returns:
+            True if the name is already simple.
+        """
+        if name == "ground":
+            return True
+        m = re.match(r'^node \d+$', name)
+        return m is not None
+
+    def _collect_nodes_in_order(self) -> List[str]:
+        """Return unique node names in first-appearance order across elements.
+
+        Traverses each element's first_node then second_node, preserving
+        the order they were encountered in the netlist.
+
+        Returns:
+            List of unique node name strings.
+        """
+        seen: Set[str] = set()
+        ordered: List[str] = []
+        for elem in self.elements:
+            for node in (elem.first_node, elem.second_node):
+                if node is not None and node not in seen:
+                    seen.add(node)
+                    ordered.append(node)
+        return ordered
+
+    def rename_nodes(self) -> Dict[str, str]:
+        """Rename complex node names to simple numbered names.
+
+        Nodes that are not already 'ground' or 'node N' are considered
+        complex (e.g. KiCAD's 'Net-_R1-Pad1_').  They are mapped to
+        'node 1', 'node 2', ... in first-appearance order, while 'ground'
+        is always preserved.
+
+        The mapping is applied in-place to all elements and the node set.
+
+        Returns:
+            Dict mapping original node names -> new node names (only
+            entries that were actually renamed).
+        """
+        mapping: Dict[str, str] = {}
+        next_id = 1
+
+        for node in self._collect_nodes_in_order():
+            if self._is_simple_node(node):
+                continue
+            mapping[node] = f"node {next_id}"
+            next_id += 1
+
+        if not mapping:
+            return mapping
+
+        for elem in self.elements:
+            if elem.first_node in mapping:
+                elem.first_node = mapping[elem.first_node]
+            if elem.second_node in mapping:
+                elem.second_node = mapping[elem.second_node]
+
+        self.nodes = set()
+        for elem in self.elements:
+            if elem.first_node is not None:
+                self.nodes.add(elem.first_node)
+            if elem.second_node is not None:
+                self.nodes.add(elem.second_node)
+
+        return mapping
 
     def generate_description(self) -> str:
         """Generate human-readable description of the circuit.
