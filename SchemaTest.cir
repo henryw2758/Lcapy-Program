@@ -1,0 +1,12 @@
+.title KiCad schematic
+.save all
+.probe alli
+.probe p(V1)
+.probe p(L1)
+.probe p(R1)
+.probe p(C1)
+V1 Net-_R1-Pad1_ GND DC 1 
+L1 Net-_C1-Pad1_ GND 1m
+R1 Net-_R1-Pad1_ Net-_C1-Pad1_ 500
+C1 Net-_C1-Pad1_ GND 1u
+.end

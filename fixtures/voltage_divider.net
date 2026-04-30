@@ -1,0 +1,6 @@
+* Simple voltage divider circuit
+* This is a basic example circuit
+
+V1 0 1 10
+R1 1 2 1k
+R2 2 0 2k
