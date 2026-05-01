@@ -74,7 +74,7 @@ class ConverterGUI:
         self.netlist_entry = ttk.Entry(self.netlist_frame, width=50)
         self.netlist_entry.grid(row=0, column=1, padx=5)
         ttk.Button(self.netlist_frame, text="Browse...", command=self._browse_netlist).grid(row=0, column=2)
-        ttk.Label(self.netlist_frame, text="(KiCAD netlist or Lcapy script)", foreground='gray').grid(row=1, column=1, sticky='w')
+        ttk.Label(self.netlist_frame, text="(KiCAD netlist format)", foreground='gray').grid(row=1, column=1, sticky='w')
 
         # Output section
         output_frame = ttk.LabelFrame(self.root, text="Output", padding=10)
@@ -104,7 +104,7 @@ class ConverterGUI:
         ttk.Checkbutton(self.kicad_format_frame, text="PNG (.png)", variable=self.vars['png']).grid(row=0, column=1, padx=10, pady=2, sticky='w')
         ttk.Checkbutton(self.kicad_format_frame, text="SVG (.svg)", variable=self.vars['svg']).grid(row=1, column=0, padx=10, pady=2, sticky='w')
         ttk.Checkbutton(self.kicad_format_frame, text="Circuitikz TeX (.tex)", variable=self.vars['tex']).grid(row=1, column=1, padx=10, pady=2, sticky='w')
-        ttk.Label(self.kicad_format_frame, text="* Image formats require pdflatex", foreground='blue').grid(row=2, column=0, columnspan=2, sticky='w', padx=10)
+        ttk.Label(self.kicad_format_frame, text="* Select output formats to generate", foreground='blue').grid(row=2, column=0, columnspan=2, sticky='w', padx=10)
 
         # Netlist output format selection
         self.netlist_format_frame = ttk.LabelFrame(self.root, text="Output Formats (Netlist Mode)", padding=10)
