@@ -112,7 +112,7 @@ class ConverterGUI:
 
         self.netlist_output_var = tk.BooleanVar(value=True)
         ttk.Checkbutton(self.netlist_format_frame, text="Text Description (.txt)", variable=self.netlist_output_var).grid(row=0, column=0, padx=10, pady=5)
-        ttk.Label(self.netlist_format_frame, text="* Generates human-readable circuit description for accessibility", foreground='blue').grid(row=0, column=1, sticky='w')
+        ttk.Label(self.netlist_format_frame, text="* Readable netlist description", foreground='blue').grid(row=0, column=1, sticky='w')
 
         # Convert button
         button_frame = ttk.Frame(self.root)
