@@ -12,11 +12,11 @@ class PDFExporter:
     """Export circuits to PDF/PNG/SVG using matplotlib (no LaTeX required)."""
 
     # Component sizes (in KiCAD mm units)
-    COMPONENT_SIZE = 2.0
-    WIRE_WIDTH = 0.5
-    FONT_SIZE = 3
+    COMPONENT_SIZE = 10.0
+    WIRE_WIDTH = 2.5
+    FONT_SIZE = 8
 
-    def __init__(self, scale: float = 0.05):
+    def __init__(self, scale: float = 0.25):
         """
         Initialize exporter.
 

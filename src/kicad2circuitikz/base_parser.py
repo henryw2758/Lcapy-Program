@@ -10,8 +10,8 @@ class Component:
     name: str
     type: str
     value: str
-    x: int
-    y: int
+    x: float
+    y: float
     rotation: int = 0
 
     def __repr__(self):
@@ -21,10 +21,10 @@ class Component:
 @dataclass
 class Wire:
     """Represents a wire segment."""
-    x1: int
-    y1: int
-    x2: int
-    y2: int
+    x1: float
+    y1: float
+    x2: float
+    y2: float
 
     def __repr__(self):
         return f"Wire(({self.x1}, {self.y1}) -> ({self.x2}, {self.y2}))"
