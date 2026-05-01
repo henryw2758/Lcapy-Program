@@ -1,15 +1,17 @@
-"""Simple GUI for KiCAD to Circuitikz converter."""
+"""Simple GUI for KiCAD to Circuitikz converter and Netlist to Text."""
 
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, scrolledtext
 import sys
 import os
+import glob
+import shutil
+import subprocess
 
-# Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
-
-from kicad2circuitikz import parse_schematic, CircuitikzExporter
-from kicad2circuitikz.pdf_exporter import PDFExporter
+sys.path.insert(0, os.path.dirname(__file__))
+from Extractor import convert_kicad_to_circuitikz
+from netlist_to_text.circuit import Circuit
+from netlist_to_text.parser import detect_format
 
 
 class ConverterGUI:
@@ -17,10 +19,11 @@ class ConverterGUI:
 
     def __init__(self, root):
         self.root = root
-        self.root.title("KiCAD to Circuitikz Converter")
+        self.root.title("Circuit Converter - KiCAD to Netlist & Netlist to Text")
         self.root.geometry("900x700")
 
         self.input_file = ""
+        self.netlist_file = ""
         self.output_dir = ""
         self.output_name = ""
 
@@ -29,15 +32,49 @@ class ConverterGUI:
     def _create_widgets(self):
         """Create GUI widgets."""
 
-        # Input section
-        input_frame = ttk.LabelFrame(self.root, text="Input", padding=10)
-        input_frame.pack(fill='x', padx=10, pady=5)
+        # Mode selection with checkboxes
+        mode_frame = ttk.LabelFrame(self.root, text="Conversion Modes", padding=10)
+        mode_frame.pack(fill='x', padx=10, pady=5)
 
-        ttk.Label(input_frame, text="KiCAD schematic file:").grid(row=0, column=0, sticky='w')
-        self.input_entry = ttk.Entry(input_frame, width=50)
-        self.input_entry.grid(row=0, column=1, padx=5)
-        ttk.Button(input_frame, text="Browse...", command=self._browse_input).grid(row=0, column=2)
-        ttk.Label(input_frame, text="(supports .sch and .kicad_sch)", foreground='gray').grid(row=1, column=1, sticky='w')
+        self.mode_vars = {
+            'kicad': tk.BooleanVar(value=True),
+            'netlist': tk.BooleanVar(value=False),
+        }
+
+        # Bind to enable/disable UI based on selection
+        self.kicad_check = ttk.Checkbutton(mode_frame, text="KiCAD Schematic → Circuitikz Diagram",
+                                                variable=self.mode_vars['kicad'],
+                                                command=self._update_ui_state)
+        self.kicad_check.grid(row=0, column=0, padx=20, pady=5, sticky='w')
+
+        self.netlist_check = ttk.Checkbutton(mode_frame, text="Netlist → Text Description",
+                                                   variable=self.mode_vars['netlist'],
+                                                   command=self._update_ui_state)
+        self.netlist_check.grid(row=0, column=1, padx=20, pady=5, sticky='w')
+
+        # KiCAD input section
+        self.kicad_frame = ttk.LabelFrame(self.root, text="KiCAD Schematic Input", padding=10)
+        self.kicad_frame.pack(fill='x', padx=10, pady=5)
+
+        ttk.Label(self.kicad_frame, text="KiCAD schematic file:").grid(row=0, column=0, sticky='w')
+        self.input_entry = ttk.Entry(self.kicad_frame, width=50)
+        self.input_entry.grid(row=0, column=1, padx=5, sticky='ew')
+        button_frame = ttk.Frame(self.kicad_frame)
+        button_frame.grid(row=0, column=2, sticky='ew')
+        ttk.Button(button_frame, text="Browse...", command=self._browse_input, width=10).pack(side='left', padx=2)
+        ttk.Button(button_frame, text="Current Dir", command=self._browse_current_dir, width=10).pack(side='left', padx=2)
+        ttk.Button(button_frame, text="List Files", command=self._list_files, width=10).pack(side='left', padx=2)
+        ttk.Label(self.kicad_frame, text="(supports .sch and .kicad_sch - or type path directly)", foreground='gray').grid(row=1, column=1, sticky='w')
+
+        # Netlist input section
+        self.netlist_frame = ttk.LabelFrame(self.root, text="Netlist Input", padding=10)
+        self.netlist_frame.pack(fill='x', padx=10, pady=5)
+
+        ttk.Label(self.netlist_frame, text="Netlist file (.net, .cir, .spice):").grid(row=0, column=0, sticky='w')
+        self.netlist_entry = ttk.Entry(self.netlist_frame, width=50)
+        self.netlist_entry.grid(row=0, column=1, padx=5)
+        ttk.Button(self.netlist_frame, text="Browse...", command=self._browse_netlist).grid(row=0, column=2)
+        ttk.Label(self.netlist_frame, text="(KiCAD netlist or Lcapy script)", foreground='gray').grid(row=1, column=1, sticky='w')
 
         # Output section
         output_frame = ttk.LabelFrame(self.root, text="Output", padding=10)
@@ -52,24 +89,30 @@ class ConverterGUI:
         self.output_name_entry = ttk.Entry(output_frame, width=50)
         self.output_name_entry.grid(row=1, column=1, padx=5, pady=5)
 
-        # Output format selection
-        format_frame = ttk.LabelFrame(self.root, text="Output Formats", padding=10)
-        format_frame.pack(fill='x', padx=10, pady=5)
+        # KiCAD output format selection
+        self.kicad_format_frame = ttk.LabelFrame(self.root, text="Output Formats (KiCAD Mode)", padding=10)
+        self.kicad_format_frame.pack(fill='x', padx=10, pady=5)
 
         self.vars = {
-            'tex': tk.BooleanVar(value=True),
-            'netlist': tk.BooleanVar(value=True),
             'pdf': tk.BooleanVar(value=True),
             'png': tk.BooleanVar(value=True),
-            'svg': tk.BooleanVar(value=False),
+            'svg': tk.BooleanVar(value=True),
+            'tex': tk.BooleanVar(value=True),
         }
 
-        ttk.Checkbutton(format_frame, text="Circuitikz/LaTeX (.tex)", variable=self.vars['tex']).grid(row=0, column=0, padx=10, pady=5)
-        ttk.Checkbutton(format_frame, text="Netlist (.txt)", variable=self.vars['netlist']).grid(row=0, column=1, padx=10, pady=5)
-        ttk.Checkbutton(format_frame, text="PDF (.pdf)", variable=self.vars['pdf']).grid(row=1, column=0, padx=10, pady=5)
-        ttk.Checkbutton(format_frame, text="PNG (.png)", variable=self.vars['png']).grid(row=1, column=1, padx=10, pady=5)
-        ttk.Checkbutton(format_frame, text="SVG (.svg)", variable=self.vars['svg']).grid(row=2, column=0, padx=10, pady=5)
-        ttk.Label(format_frame, text="* All formats use matplotlib (no external tools required)", foreground='green').grid(row=2, column=1, sticky='w')
+        ttk.Checkbutton(self.kicad_format_frame, text="PDF (.pdf)", variable=self.vars['pdf']).grid(row=0, column=0, padx=10, pady=2, sticky='w')
+        ttk.Checkbutton(self.kicad_format_frame, text="PNG (.png)", variable=self.vars['png']).grid(row=0, column=1, padx=10, pady=2, sticky='w')
+        ttk.Checkbutton(self.kicad_format_frame, text="SVG (.svg)", variable=self.vars['svg']).grid(row=1, column=0, padx=10, pady=2, sticky='w')
+        ttk.Checkbutton(self.kicad_format_frame, text="Circuitikz TeX (.tex)", variable=self.vars['tex']).grid(row=1, column=1, padx=10, pady=2, sticky='w')
+        ttk.Label(self.kicad_format_frame, text="* Image formats require pdflatex", foreground='blue').grid(row=2, column=0, columnspan=2, sticky='w', padx=10)
+
+        # Netlist output format selection
+        self.netlist_format_frame = ttk.LabelFrame(self.root, text="Output Formats (Netlist Mode)", padding=10)
+        # Don't pack yet
+
+        self.netlist_output_var = tk.BooleanVar(value=True)
+        ttk.Checkbutton(self.netlist_format_frame, text="Text Description (.txt)", variable=self.netlist_output_var).grid(row=0, column=0, padx=10, pady=5)
+        ttk.Label(self.netlist_format_frame, text="* Generates human-readable circuit description for accessibility", foreground='blue').grid(row=0, column=1, sticky='w')
 
         # Convert button
         button_frame = ttk.Frame(self.root)
@@ -89,211 +132,236 @@ class ConverterGUI:
         self.output_text = scrolledtext.ScrolledText(output_frame, height=15, wrap='word')
         self.output_text.pack(fill='both', expand=True)
 
-    def _browse_input(self):
-        """Browse for input schematic file."""
-        filename = filedialog.askopenfilename(
-            title="Select KiCAD schematic file",
-            filetypes=[
-                ("KiCAD Schematic", "*.sch *.kicad_sch"),
-                ("KiCAD v6+ Schematic", "*.kicad_sch"),
-                ("KiCAD v5 Schematic", "*.sch"),
-                ("All files", "*.*")
-            ]
-        )
-        if filename:
-            self.input_file = filename
-            self.input_entry.delete(0, tk.END)
-            self.input_entry.insert(0, filename)
+        # Bind Enter key to input field for file validation
+        self.input_entry.bind('<FocusOut>', lambda e: self._validate_input_file())
+        self.netlist_entry.bind('<FocusOut>', lambda e: self._validate_netlist_file())
 
-            # Set default output directory and name
-            self.output_dir = os.path.dirname(filename)
+        # Initial UI state update
+        self._update_ui_state()
+
+    def _update_ui_state(self):
+        """Enable/disable UI sections based on mode checkboxes."""
+        kicad_enabled = self.mode_vars['kicad'].get()
+        netlist_enabled = self.mode_vars['netlist'].get()
+
+        # Enable/disable KiCAD inputs
+        state_kicad = 'normal' if kicad_enabled else 'disabled'
+        self.input_entry.config(state=state_kicad)
+        for child in self.kicad_frame.winfo_children():
+            if isinstance(child, ttk.Button):
+                child.config(state=state_kicad)
+
+        # Enable/disable Netlist inputs
+        state_netlist = 'normal' if netlist_enabled else 'disabled'
+        self.netlist_entry.config(state=state_netlist)
+        for child in self.netlist_frame.winfo_children():
+            if isinstance(child, ttk.Button):
+                child.config(state=state_netlist)
+
+        # Show/hide output format sections
+        self.kicad_format_frame.pack_forget()
+        self.netlist_format_frame.pack_forget()
+
+        if kicad_enabled and not netlist_enabled:
+            self.kicad_format_frame.pack(fill='x', padx=10, pady=5, after=self.netlist_frame)
+            for child in self.kicad_format_frame.winfo_children():
+                if isinstance(child, ttk.Checkbutton):
+                    child.config(state='normal')
+
+        elif netlist_enabled and not kicad_enabled:
+            self.netlist_format_frame.pack(fill='x', padx=10, pady=5, after=self.netlist_frame)
+            for child in self.netlist_format_frame.winfo_children():
+                if isinstance(child, ttk.Checkbutton):
+                    child.config(state='normal')
+
+        elif kicad_enabled and netlist_enabled:
+            self.kicad_format_frame.pack(fill='x', padx=10, pady=5, after=self.netlist_frame)
+            self.netlist_format_frame.pack(fill='x', padx=10, pady=5, after=self.kicad_format_frame)
+            for child in self.kicad_format_frame.winfo_children():
+                if isinstance(child, ttk.Checkbutton):
+                    child.config(state='normal')
+            for child in self.netlist_format_frame.winfo_children():
+                if isinstance(child, ttk.Checkbutton):
+                    child.config(state='normal')
+
+        # If neither enabled, nothing shows (both sections already pack_forget above)
+
+        # Auto-detect test.kicad_sch when KiCAD mode is enabled
+        if kicad_enabled and not self.input_file and os.path.exists("test.kicad_sch"):
+            self.input_file = os.path.abspath("test.kicad_sch")
+            self.input_entry.delete(0, tk.END)
+            self.input_entry.insert(0, self.input_file)
+
+            # Set output directory
+            self.output_dir = os.path.dirname(self.input_file)
             self.output_dir_entry.delete(0, tk.END)
             self.output_dir_entry.insert(0, self.output_dir)
 
-            base_name = os.path.splitext(os.path.basename(filename))[0]
+            base_name = os.path.splitext(os.path.basename(self.input_file))[0]
             if base_name.endswith('.kicad'):
                 base_name = base_name[:-6]
             self.output_name = base_name
             self.output_name_entry.delete(0, tk.END)
             self.output_name_entry.insert(0, base_name)
 
-    def _browse_output_dir(self):
-        """Browse for output directory."""
-        dirname = filedialog.askdirectory(title="Select output directory")
-        if dirname:
-            self.output_dir = dirname
-            self.output_dir_entry.delete(0, tk.END)
-            self.output_dir_entry.insert(0, dirname)
+            if not self.mode_vars['netlist'].get():
+                self._log(f"Auto-detected test.kicad_sch\n")
 
-    def _convert(self):
-        """Convert the schematic."""
-        # Validate input
-        if not self.input_file:
-            messagebox.showerror("Error", "Please select a KiCAD schematic file")
-            return
-
-        if not self.output_dir:
-            messagebox.showerror("Error", "Please select an output directory")
-            return
-
-        if not self.output_name:
-            self.output_name = os.path.splitext(os.path.basename(self.input_file))[0]
-            if self.output_name.endswith('.kicad'):
-                self.output_name = self.output_name[:-6]
-
-        # Disable button and start progress
-        self.convert_button.config(state='disabled')
-        self.progress.start()
-        self.root.update()
-
-        # Clear output area
-        self.output_text.delete(1.0, tk.END)
-        self._log(f"Parsing {os.path.basename(self.input_file)}...\n")
-
-        try:
-            # Parse the schematic (auto-detect format)
-            components, wires, parser = parse_schematic(self.input_file)
-
-            self._log(f"Found {len(components)} components\n")
-            self._log(f"Found {len(wires)} wires\n\n")
-
-            # Circuitikz/LaTeX
-            if self.vars['tex'].get():
-                self._log("Generating LaTeX...\n")
-                tex_file = os.path.join(self.output_dir, f"{self.output_name}.tex")
-                exporter = CircuitikzExporter()
-                circuitikz_code = exporter.export(components, wires)
-
-                # Wrap in complete LaTeX document
-                full_tex = self._wrap_latex(circuitikz_code)
-
-                with open(tex_file, 'w') as f:
-                    f.write(full_tex)
-
-                self._log(f"✓ Saved LaTeX to: {tex_file}\n")
-
-            # Netlist
-            if self.vars['netlist'].get():
-                self._log("Generating netlist...\n")
-                netlist_file = os.path.join(self.output_dir, f"{self.output_name}_netlist.txt")
-                netlist = self._generate_netlist(components, wires)
-
-                with open(netlist_file, 'w') as f:
-                    f.write(netlist)
-
-                self._log(f"✓ Saved netlist to: {netlist_file}\n")
-
-            # PDF (using matplotlib, no external tools)
-            if self.vars['pdf'].get():
-                self._log("Generating PDF...\n")
-                pdf_file = os.path.join(self.output_dir, f"{self.output_name}.pdf")
-
-                try:
-                    pdf_exporter = PDFExporter()
-                    pdf_exporter.export(components, wires, pdf_file)
-                except Exception as e:
-                    self._log(f"✗ PDF generation failed: {str(e)}\n")
-                    import traceback
-                    self._log(traceback.format_exc())
-
-            # PNG (using matplotlib, no external tools)
-            if self.vars['png'].get():
-                self._log("Generating PNG...\n")
-                png_file = os.path.join(self.output_dir, f"{self.output_name}.png")
-
-                try:
-                    pdf_exporter = PDFExporter()
-                    pdf_exporter.export(components, wires, png_file)
-                except Exception as e:
-                    self._log(f"✗ PNG generation failed: {str(e)}\n")
-                    import traceback
-                    self._log(traceback.format_exc())
-
-            # SVG (using matplotlib, no external tools)
-            if self.vars['svg'].get():
-                self._log("Generating SVG...\n")
-                svg_file = os.path.join(self.output_dir, f"{self.output_name}.svg")
-
-                try:
-                    pdf_exporter = PDFExporter()
-                    pdf_exporter.export(components, wires, svg_file)
-                except Exception as e:
-                    self._log(f"✗ SVG generation failed: {str(e)}\n")
-                    import traceback
-                    self._log(traceback.format_exc())
-
-            # Show preview
-            if self.vars['tex'].get():
-                self._log("\n" + "="*60 + "\n")
-                self._log("Circuitikz Preview:\n")
-                self._log("="*60 + "\n")
-                exporter = CircuitikzExporter()
-                self._log(exporter.export(components, wires))
-                self._log("\n" + "="*60 + "\n")
-
-            self._log("\n✓ Conversion complete!\n")
-
-        except Exception as e:
-            messagebox.showerror("Error", f"Conversion failed: {str(e)}")
-            self._log(f"\n✗ Error: {str(e)}\n")
-            import traceback
-            self._log(traceback.format_exc())
-
-        finally:
-            # Re-enable button and stop progress
-            self.convert_button.config(state='normal')
-            self.progress.stop()
-
-    def _log(self, message: str):
-        """Log a message to the output area."""
+    def _log(self, message):
         self.output_text.insert(tk.END, message)
         self.output_text.see(tk.END)
-        self.root.update()
+        self.root.update_idletasks()
 
-    def _wrap_latex(self, circuitikz_code: str) -> str:
-        """Wrap Circuitikz code in a complete LaTeX document."""
-        return f"""\\documentclass[preview]{{standalone}}
-\\usepackage{{circuitikz}}
-\\begin{{document}}
+    def _validate_input_file(self):
+        path = self.input_entry.get().strip()
+        if not path:
+            return
+        if os.path.isfile(path):
+            self.input_file = path
+            if not self.output_dir_entry.get().strip():
+                self.output_dir = os.path.dirname(path)
+                self.output_dir_entry.delete(0, tk.END)
+                self.output_dir_entry.insert(0, self.output_dir)
+            if not self.output_name_entry.get().strip():
+                base = os.path.splitext(os.path.basename(path))[0]
+                if base.endswith('.kicad'):
+                    base = base[:-6]
+                self.output_name = base
+                self.output_name_entry.delete(0, tk.END)
+                self.output_name_entry.insert(0, base)
 
-\\begin{{center}}
-{circuitikz_code}
-\\end{{center}}
+    def _validate_netlist_file(self):
+        path = self.netlist_entry.get().strip()
+        if not path:
+            return
+        if os.path.isfile(path):
+            self.netlist_file = path
 
-\\end{{document}}
-"""
+    def _browse_input(self):
+        path = filedialog.askopenfilename(
+            title="Select KiCAD Schematic",
+            filetypes=[("KiCAD Schematics", "*.kicad_sch *.sch"), ("All Files", "*.*")]
+        )
+        if path:
+            self.input_file = path
+            self.input_entry.delete(0, tk.END)
+            self.input_entry.insert(0, path)
+            self._validate_input_file()
 
-    def _generate_netlist(self, components, wires) -> str:
-        """Generate a simple netlist as text file."""
-        lines = []
-        lines.append("=" * 60)
-        lines.append(f"NETLIST for: {os.path.basename(self.input_file)}")
-        lines.append("=" * 60)
-        lines.append("")
-        lines.append("COMPONENTS:")
-        lines.append("-" * 40)
+    def _browse_current_dir(self):
+        sch_files = glob.glob("*.kicad_sch") + glob.glob("*.sch")
+        if sch_files:
+            self.input_file = os.path.abspath(sch_files[0])
+            self.input_entry.delete(0, tk.END)
+            self.input_entry.insert(0, self.input_file)
+            self._validate_input_file()
+            self._log(f"Found: {sch_files[0]}\n")
+        else:
+            self._log("No KiCAD schematic files found in current directory.\n")
 
-        for comp in components:
-            if comp.name and not comp.name.startswith('#'):
-                lines.append(f"  {comp.name:10} | {comp.type:15} | Value: {comp.value if comp.value else 'N/A':10}")
+    def _list_files(self):
+        self._log("\n--- KiCAD Schematics in current directory ---\n")
+        for ext in ("*.kicad_sch", "*.sch"):
+            for f in glob.glob(ext):
+                self._log(f"  {os.path.abspath(f)}\n")
+        self._log("--- End of list ---\n\n")
 
-        lines.append("")
-        lines.append("WIRES:")
-        lines.append("-" * 40)
+    def _browse_output_dir(self):
+        path = filedialog.askdirectory(title="Select Output Directory")
+        if path:
+            self.output_dir = path
+            self.output_dir_entry.delete(0, tk.END)
+            self.output_dir_entry.insert(0, path)
 
-        for i, wire in enumerate(wires, 1):
-            lines.append(f"  Wire {i:2}: ({wire.x1:4}, {wire.y1:4}) -> ({wire.x2:4}, {wire.y2:4})")
+    def _browse_netlist(self):
+        path = filedialog.askopenfilename(
+            title="Select Netlist File",
+            filetypes=[("Netlist Files", "*.net *.cir *.spice"), ("All Files", "*.*")]
+        )
+        if path:
+            self.netlist_file = path
+            self.netlist_entry.delete(0, tk.END)
+            self.netlist_entry.insert(0, path)
+            self._validate_netlist_file()
 
-        lines.append("")
-        lines.append("=" * 60)
-        lines.append(f"Total: {len(components)} components, {len(wires)} wires")
-        lines.append("=" * 60)
+    def _convert(self):
+        self.output_text.delete('1.0', tk.END)
+        output_dir = self.output_dir_entry.get().strip() or os.path.dirname(__file__)
+        output_name = self.output_name_entry.get().strip() or "output"
 
-        return '\n'.join(lines)
+        try:
+            self.progress.start(10)
+
+            if self.mode_vars['kicad'].get():
+                input_path = self.input_entry.get().strip()
+                if not input_path or not os.path.isfile(input_path):
+                    self._log("Error: Please specify a valid KiCAD schematic file.\n")
+                    return
+                self._convert_kicad(input_path, output_dir, output_name)
+
+            if self.mode_vars['netlist'].get():
+                netlist_path = self.netlist_entry.get().strip()
+                if not netlist_path or not os.path.isfile(netlist_path):
+                    self._log("Error: Please specify a valid netlist file.\n")
+                    return
+                self._convert_netlist(netlist_path, output_dir, output_name)
+
+            self._log("\nDone.\n")
+        except Exception as e:
+            self._log(f"\nError: {e}\n")
+            messagebox.showerror("Conversion Error", str(e))
+        finally:
+            self.progress.stop()
+
+    def _convert_kicad(self, input_path, output_dir, output_name):
+        self._log("Converting KiCAD schematic to Circuitikz diagram...\n")
+
+        want_image = self.vars['pdf'].get() or self.vars['png'].get() or self.vars['svg'].get()
+        if want_image:
+            try:
+                files = convert_kicad_to_circuitikz(input_path, export_mode="image")
+                for f in files:
+                    dest = os.path.join(output_dir, os.path.basename(f))
+                    if os.path.abspath(f) != os.path.abspath(dest):
+                        shutil.move(f, dest)
+                    self._log(f"  Generated: {dest}\n")
+            except (RuntimeError, FileNotFoundError) as e:
+                self._log(f"  Image generation failed (pdflatex not found): {e}\n")
+                self._log("  Skipping image formats.\n")
+
+        if self.vars['tex'].get():
+            files = convert_kicad_to_circuitikz(input_path, export_mode="raw")
+            for f in files:
+                dest = os.path.join(output_dir, output_name + ".tex")
+                if os.path.abspath(f) != os.path.abspath(dest):
+                    shutil.move(f, dest)
+                self._log(f"  TeX written to: {dest}\n")
+                with open(dest, 'r', encoding='utf-8') as tf:
+                    self._log("\n--- Circuitikz Preview ---\n")
+                    self._log(tf.read())
+                    self._log("--- End Preview ---\n")
+
+    def _convert_netlist(self, netlist_path, output_dir, output_name):
+        self._log("Parsing netlist file...\n")
+        fmt = detect_format(netlist_path)
+        self._log(f"  Detected format: {fmt}\n")
+
+        circuit = Circuit()
+        circuit.from_netlist_file(netlist_path)
+        circuit.rename_nodes()
+        description = circuit.generate_description()
+
+        self._log("\n--- Circuit Description ---\n")
+        self._log(description)
+
+        if self.netlist_output_var.get():
+            txt_path = os.path.join(output_dir, output_name + "_description.txt")
+            with open(txt_path, 'w', encoding='utf-8') as f:
+                f.write(description)
+            self._log(f"  Description written to: {txt_path}\n")
 
 
 def main():
-    """Run the GUI."""
     root = tk.Tk()
     app = ConverterGUI(root)
     root.mainloop()
